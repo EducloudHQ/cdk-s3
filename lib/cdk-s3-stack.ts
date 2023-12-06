@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import { StackProps } from 'aws-cdk-lib';
 import { aws_apigateway as apigw } from "aws-cdk-lib";
 import { aws_iam as iam } from "aws-cdk-lib";
+import {aws_s3 as s3} from "aws-cdk-lib";;
 
 export class CdkS3Stack extends cdk.Stack {
 
@@ -21,8 +22,14 @@ export class CdkS3Stack extends cdk.Stack {
       binaryMediaTypes: ['application/octet-stream', 'image/jpeg']
     });
 
+    const myBucket = new s3.Bucket(this, 'MyBucket', {
+      bucketName: 'my-storage-bucket-cdk',
+      publicReadAccess: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+
     //Create {folder} API resource to list objects in a given bucket
-    const bucketResource = restApi.root.addResource("{folder}");
+    const bucketResource = restApi.root.addResource(myBucket.bucketName);
 
     //Create {item} API resource to read/write an object in a given bucket
     const bucketItemResource = bucketResource.addResource("{item}");
@@ -66,7 +73,7 @@ export class CdkS3Stack extends cdk.Stack {
     const listBucketIntegration = new apigw.AwsIntegration({
       service: "s3",
       region: "us-east-1",
-      path: '{bucket}',
+      path: myBucket.bucketName,
       integrationHttpMethod: "GET",
       options: {
         credentialsRole: this.apiGatewayRole,
@@ -139,7 +146,7 @@ export class CdkS3Stack extends cdk.Stack {
     const getObjectIntegration = new apigw.AwsIntegration({
       service: "s3",
       region: "us-east-1",
-      path: '{bucket}/{object}',
+      path: myBucket.bucketName+'/{object}',
       integrationHttpMethod: "GET",
       options: {
         credentialsRole: this.apiGatewayRole,
@@ -179,7 +186,7 @@ export class CdkS3Stack extends cdk.Stack {
     const putObjectIntegration = new apigw.AwsIntegration({
       service: "s3",
       region: "us-east-1",
-      path: '{bucket}/{object}',
+      path: myBucket.bucketName+'/{object}',
       integrationHttpMethod: "PUT",
       options: {
         credentialsRole: this.apiGatewayRole,
